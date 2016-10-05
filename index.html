@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <style>
+   * {
+     box-sizing: border-box;
+   }
+   body {
+     font-size: 13px;
+   }
+
+   .test {
+     display: flex;
+     flex-direction: column;
+     margin: 0 auto;
+     padding: 10rem 0;
+     max-width: 25em;
+   }
+
+   .action {
+     text-align: center;
+     margin-top: 1em;
+   }
+
+   .colors {
+     padding: 0;
+     margin: 0;
+     display: flex;
+     justify-content: space-around;
+   }
+
+   .color {
+     list-style: none;
+     border-radius: 10em;
+     background-color: #f0f0f0;
+     height: 4em;
+     width: 4em;
+     opacity: 0.4;
+   }
+
+   .color:active {
+     box-shadow: 0 0 2px red;
+   }
+
+   .color--active {
+     opacity: 1;
+   }
+
+   .color--red {
+     background-color: red;
+   }
+
+   .color--orange {
+     background-color: orange;
+   }
+
+   .color--green {
+     background-color: green;
+   }
+
+   .color--purple {
+     background-color: purple;
+   }
+
+   button {
+     display: inline-block;
+     background-color: #2ec866;
+     border: 0;
+     border-radius: 10em;
+     cursor: pointer;
+     padding: 0.9em 1.3em;
+     font-size: 1.1em;
+     line-height: 1em;
+     color: white;
+     text-align: center;
+     text-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+   }
+
+   button:focus {
+     outline: none;
+   }
+
+   button:active {
+     background-color: #17c155;
+     box-shadow: 0 0 2px red;
+   }
+
+   button[disabled] {
+     opacity: 0.4;
+   }
+  </style>
+  <body>
+    <div class="test" id="test">
+      <ul id="colors" class="colors">
+        <li id="color_1" class="color color--red"></li>
+        <li id="color_2" class="color color--orange"></li>
+        <li id="color_3" class="color color--green"></li>
+        <li id="color_4" class="color color--purple"></li>
+      </ul>
+
+      <div class="action">
+        <button id="play">Play</button>
+      </div>
+    </div>
+
+    <script>
+     const BLINK_CLASS = 'color--active';
+
+     /**
+      * Returns a random integer between min (inclusive) and max (inclusive)
+      * Using Math.round() will give you a non-uniform distribution!
+      *
+      * @param {Number} min
+      * @param {Number} max
+      * @return {Number}
+      */
+      function getRandomInt(min, max) {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+     /**
+      * Passing a DOM id find it and make it blink
+      *
+      * @param {Number} id
+      */
+     function blinkColor(id) {
+       const color = document.getElementById(`color_${id}`)
+
+       if (!color) return;
+
+       const classList = color.classList;
+       classList.add(BLINK_CLASS);
+     }
+
+     /**
+      * Remove blinking color
+      */
+     function removeBlinkColor() {
+       const prevBlink = document.getElementsByClassName(BLINK_CLASS);
+
+       if (!!prevBlink.length) {
+         prevBlink[0].classList.remove(BLINK_CLASS);
+       }
+     }
+
+     const RANDOM_COLOR_SEQUENCE = [];
+
+     /**
+      * Initialize generator class
+      *
+      * @option {DOM} button
+      * @option {Number} min
+      * @option {Number} max
+      */
+     function RandomColorGenerator({ colorsContainer, button, min, max }) {
+       this.min_id = min;
+       this.max_id = max;
+       this.button = button;
+       this.colorsContainer = colorsContainer;
+       this.sequence = [];
+       this.answer = [];
+
+       button.addEventListener('click', this.onClickPlay.bind(this));
+       this.setUpColorsListeners();
+
+     }
+
+     /**
+      * When user clicks play
+      */
+     RandomColorGenerator.prototype.setUpColorsListeners = function () {
+       this.colorNodes = this.colorsContainer.getElementsByTagName('li');
+
+       for (let color of this.colorNodes) {
+         this.setUpColorOnClick(color);
+       }
+     };
+
+     /**
+      * Set up color on click listener
+      *
+      * @param {DOM} color
+      */
+     RandomColorGenerator.prototype.setUpColorOnClick = function (color) {
+       color.addEventListener('click', this.onClickColor.bind(this));
+     };
+
+     /**
+      * When user clicks on color check if it's ok
+      *
+      * @param {Event} event
+      */
+     RandomColorGenerator.prototype.onClickColor = function (event) {
+       const colorId = +event.target.getAttribute('id').replace('color_', '')
+       const isOk = this.checkSequence(colorId);
+
+       if (isOk) {
+         this.answer.push(colorId);
+
+         if (this.answer.length === this.sequence.length) {
+           this.answer = [];
+           this.run();
+         }
+
+       } else {
+         alert('No :(');
+         this.reset();
+       }
+     };
+
+     /**
+      * Ckeck if the sequence is ok
+      *
+      * @param {Number} colorId
+      * @return {Boolean}
+      */
+     RandomColorGenerator.prototype.checkSequence = function (colorId) {
+       const currentColorIndex = this.answer.length;
+
+       return this.sequence[currentColorIndex] === colorId;
+     };
+
+     /**
+      * When user clicks play
+      */
+     RandomColorGenerator.prototype.onClickPlay = function () {
+       this.button.disabled = true;
+       this.run();
+     };
+
+     /**
+      * Reset sequence
+      */
+     RandomColorGenerator.prototype.reset = function () {
+       this.sequence = [];
+       this.answer = [];
+       this.button.disabled = false;
+     };
+
+     /**
+      * Start sequence
+      */
+     RandomColorGenerator.prototype.generateSequence = function () {
+        const newColorId = getRandomInt(this.min_id, this.max_id);
+
+        this.sequence.push(newColorId);
+     };
+
+     /**
+      * Run the sequence
+      */
+     RandomColorGenerator.prototype.run = function () {
+       const self = this;
+       this.generateSequence();
+
+       let blinking_index = 0;
+
+       function runSequence() {
+         removeBlinkColor();
+
+         if (blinking_index < self.sequence.length) {
+           const colorId = self.sequence[blinking_index];
+           blinking_index++;
+           blinkColor(colorId);
+         } else {
+           clearInterval(runnigSequence);
+         }
+       }
+
+       const runnigSequence = setInterval(runSequence, 500);
+     }
+
+     new RandomColorGenerator({
+       button: document.getElementById('play'),
+       colorsContainer: document.getElementById('colors'),
+       min: 1,
+       max: 4
+     });
+    </script>
+  </body>
+</html>
